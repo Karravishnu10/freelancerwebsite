@@ -54,25 +54,42 @@ function toggleHighContrast() {
   }
 }
 
-// Toggle Negative Contrast Mode
-function toggleNegativeContrast() {
-  if (document.body.classList.contains("negative-contrast")) {
-    document.body.classList.remove("negative-contrast");
-    localStorage.removeItem("negativeContrast");
+// Toggle light background for better readability
+function toggleLightBackground() {
+  const body = document.body;
+  body.classList.toggle("light-background");
+  if (body.classList.contains("light-background")) {
+    body.style.backgroundColor = "#ffffff";
+    body.style.color = "#000000";
   } else {
-    document.body.classList.add("negative-contrast");
-    localStorage.setItem("negativeContrast", "true");
+    body.style.backgroundColor = "#1f2937";
+    body.style.color = "#ffffff";
   }
 }
 
-// Toggle Light Background
-function toggleLightBackground() {
-  if (document.body.classList.contains("light-background")) {
-    document.body.classList.remove("light-background");
-    localStorage.removeItem("lightBackground");
+// Toggle negative contrast for users needing high visibility
+function toggleNegativeContrast() {
+  const body = document.body;
+  body.classList.toggle("negative-contrast");
+  if (body.classList.contains("negative-contrast")) {
+    body.style.backgroundColor = "#000000";
+    body.style.color = "#ffff00"; // Yellow text for high contrast
   } else {
-    document.body.classList.add("light-background");
-    localStorage.setItem("lightBackground", "true");
+    body.style.backgroundColor = "#1f2937";
+    body.style.color = "#ffffff";
+  }
+}
+
+// Toggle a more readable font for accessibility
+function toggleReadableFont() {
+  const body = document.body;
+  body.classList.toggle("readable-font");
+  if (body.classList.contains("readable-font")) {
+    body.style.fontFamily = "Arial, sans-serif"; // Simple, readable font
+    body.style.fontSize = "18px"; // Slightly larger text size
+  } else {
+    body.style.fontFamily = ""; // Reset to default
+    body.style.fontSize = "";
   }
 }
 
@@ -84,17 +101,6 @@ function underlineLinks() {
     link.style.textDecoration = underline ? "none" : "underline";
   });
   localStorage.setItem("linksUnderline", !underline);
-}
-
-// Toggle Readable Font
-function toggleReadableFont() {
-  if (document.body.classList.contains("readable-font")) {
-    document.body.classList.remove("readable-font");
-    localStorage.removeItem("readableFont");
-  } else {
-    document.body.classList.add("readable-font");
-    localStorage.setItem("readableFont", "true");
-  }
 }
 
 // Reset Accessibility Settings
