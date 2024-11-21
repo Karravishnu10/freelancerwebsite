@@ -28,6 +28,38 @@
 
       const app = initializeApp(firebaseConfig);
       const database = getDatabase(app);
+
+      // Submit Support Ticket
+      async function submitSupportTicket(event) {
+        event.preventDefault(); // Prevent page reload
+
+        // Get input values
+        const subject = document.getElementById("subject").value.trim();
+        const message = document.getElementById("message").value.trim();
+
+        // Validate input
+        if (!subject || !message) {
+          alert("Please fill out all fields.");
+          return;
+        }
+
+        // Push ticket to Firebase
+        try {
+          const ticketsRef = ref(database, "support_tickets");
+          await push(ticketsRef, {
+            subject: subject,
+            message: message,
+            submitted_at: new Date().toISOString(),
+          });
+          alert("Your support ticket has been submitted successfully!");
+          document.getElementById("support-ticket-form").reset();
+        } catch (error) {
+          console.error("Error submitting support ticket:", error);
+          alert(
+            "An error occurred while submitting the ticket. Please try again."
+          );
+        }
+      }
     </script>
 
     <!-- TailwindCSS -->
@@ -122,7 +154,11 @@
       <section class="support-card mt-10">
         <div class="support-section">
           <h2 class="text-2xl font-semibold">Submit a Support Ticket</h2>
-          <form action="/submit_support_ticket" method="POST" class="mt-4">
+          <form
+            id="support-ticket-form"
+            class="mt-4"
+            onsubmit="submitSupportTicket(event)"
+          >
             <div class="form-group mb-4">
               <label for="subject" class="block">Subject</label>
               <input
@@ -161,6 +197,46 @@
         const faq = document.getElementById(faqId);
         faq.style.display = faq.style.display === "none" ? "block" : "none";
       }
+      document
+        .getElementById("support-form")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault(); // Prevent default form submission
+
+          const subject = document.getElementById("subject").value.trim();
+          const message = document.getElementById("message").value.trim();
+
+          if (!subject || !message) {
+            alert("Please fill out all required fields.");
+            return;
+          }
+
+          try {
+            const ticketId = Date.now().toString(); // Generate a unique ID using the current timestamp
+            const userId = localStorage.getItem("userUid"); // Get user ID from local storage
+
+            // Construct the ticket object
+            const ticket = {
+              ticketId,
+              userId: userId || "anonymous", // Handle if no user is logged in
+              subject,
+              message,
+              timestamp: new Date().toISOString(),
+            };
+
+            // Save the ticket to Firebase Realtime Database
+            const ticketsRef = ref(database, `tickets/${ticketId}`);
+            await set(ticketsRef, ticket);
+
+            alert("Support ticket submitted successfully!");
+            // Clear the form fields
+            document.getElementById("support-form").reset();
+          } catch (error) {
+            console.error("Error submitting support ticket:", error);
+            alert(
+              "An error occurred while submitting the ticket. Please try again."
+            );
+          }
+        });
 
       // Dynamically load nav.html content and accessibility panel
       window.onload = () => {
