@@ -73,7 +73,124 @@
         }
       });
 
+      document.getElementById("update-profile-form").onsubmit = async (e) => {
+        e.preventDefault();
+
+        const userId = auth.currentUser?.uid; // Ensure user is authenticated
+        if (!userId) {
+          alert("User not authenticated");
+          return;
+        }
+
+        const minimumRate =
+          document.getElementById("minimum_rate").value || "0";
+        const skills = document.getElementById("skills").value || "N/A";
+
+        try {
+          await update(ref(database, `users/${userId}`), {
+            minimum_rate: minimumRate,
+            skills: skills,
+          });
+          alert("Profile updated successfully!");
+
+          // Reflect changes in the UI
+          document.getElementById("profile-rate").textContent = minimumRate;
+          document.getElementById("profile-skills").textContent = skills;
+        } catch (error) {
+          console.error("Error updating profile:", error);
+          alert("Error updating profile.");
+        }
+      };
+
+      document
+        .getElementById("upload-portfolio-btn")
+        .addEventListener("click", async () => {
+          const userId = auth.currentUser?.uid; // Ensure user is authenticated
+          if (!userId) {
+            alert("User not authenticated.");
+            return;
+          }
+
+          const fileInput = document.getElementById("portfolio-upload");
+          const file = fileInput.files[0]; // Get the selected file
+
+          if (!file) {
+            alert("Please select a file to upload.");
+            return;
+          }
+
+          const allowedTypes = [
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          ];
+          if (!allowedTypes.includes(file.type)) {
+            alert("Only PDF or Word documents are allowed.");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            const base64String = event.target.result; // Base64-encoded string
+
+            try {
+              await update(ref(database, `users/${userId}`), {
+                portfolio_base64: base64String,
+                portfolio_filename: file.name,
+              });
+              alert("Portfolio uploaded successfully!");
+              fileInput.value = ""; // Reset the file input
+            } catch (error) {
+              console.error("Error uploading portfolio:", error);
+              alert("Error uploading portfolio. Please try again.");
+            }
+          };
+
+          reader.readAsDataURL(file); // Read the file as a Base64 string
+        });
+
+      // Display Portfolio with Authentication Check
+      const displayPortfolio = async () => {
+        const auth = getAuth();
+
+        // Check if the user is authenticated
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            const userId = user.uid;
+
+            try {
+              // Fetch portfolio data from the database
+              const snapshot = await get(ref(database, `users/${userId}`));
+              const userData = snapshot.val();
+
+              if (userData?.portfolio_base64 && userData?.portfolio_filename) {
+                const portfolioContainer =
+                  document.getElementById("portfolio-display");
+
+                // Create a download link
+                const link = document.createElement("a");
+                link.href = userData.portfolio_base64; // Base64 string
+                link.download = userData.portfolio_filename; // Original filename
+                link.textContent = `Download Portfolio: ${userData.portfolio_filename}`;
+                link.classList.add("text-blue-600", "hover:underline");
+
+                portfolioContainer.innerHTML = ""; // Clear existing content
+                portfolioContainer.appendChild(link);
+              } else {
+                console.log("No portfolio found for this user.");
+              }
+            } catch (error) {
+              console.error("Error fetching portfolio:", error);
+              alert("Error fetching portfolio. Please try again.");
+            }
+          } else {
+            console.error("User not authenticated. Redirecting...");
+            window.location.href = "/login.html"; // Redirect to login
+          }
+        });
+      };
       window.onload = () => {
+        displayPortfolio();
         // First load the nav.html content
         fetch("nav.html")
           .then((response) => response.text())
@@ -151,27 +268,6 @@
                 />
               </div>
 
-              <div class="mb-3">
-                <label
-                  for="portfolio-upload"
-                  class="block text-sm font-medium text-gray-300"
-                  >Upload Portfolio (PDF/Image):</label
-                >
-                <input
-                  type="file"
-                  id="portfolio-upload"
-                  class="form-control w-full px-4 py-2 rounded-md text-gray-700"
-                />
-              </div>
-
-              <button
-                type="submit"
-                class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
-                id="upload-portfolio-btn"
-              >
-                Upload Portfolio
-              </button>
-
               <button
                 type="submit"
                 class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
@@ -179,6 +275,29 @@
                 Save Changes
               </button>
             </form>
+            <div class="mt-6">
+              <label
+                for="portfolio-upload"
+                class="block text-sm font-medium text-gray-300"
+                >Upload Portfolio (PDF/Image):</label
+              >
+              <input
+                type="file"
+                id="portfolio-upload"
+                class="form-control w-full px-4 py-2 rounded-md text-gray-700"
+              />
+              <div id="portfolio-display" class="mt-6">
+                <!-- Portfolio download link will be dynamically added here -->
+              </div>
+
+              <button
+                type="button"
+                class="mt-2 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
+                id="upload-portfolio-btn"
+              >
+                Upload Portfolio
+              </button>
+            </div>
 
             <!-- Logout button -->
             <form id="logout-form" class="mt-4">
