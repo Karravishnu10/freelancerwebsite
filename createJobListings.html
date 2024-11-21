@@ -122,127 +122,128 @@
   <body class="bg-gray-900 text-white">
     <div id="nav-container"></div>
 
-    <!-- Main content container -->
-    <div class="container mx-auto p-6 w-3/5">
-      <section id="create-job">
-        <h1 class="text-3xl font-bold mb-4">Create a New Job Listing</h1>
+    <section id="create-job" class="mx-auto px-6 pt-10 pb-20 max-w-4xl">
+      <h1 class="text-3xl font-bold mb-6 text-center">
+        Create a New Job Listing
+      </h1>
 
-        <!-- Job Creation Form -->
-        <form onsubmit="createJobListing(event)" class="space-y-4">
-          <div class="mb-3">
-            <label for="job-title" class="form-label text-gray-300"
-              >* Job Title</label
-            >
-            <input
-              type="text"
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="job-title"
-              name="job_title"
-              required
-              placeholder="Enter job title"
-            />
-          </div>
-
-          <div class="mb-3">
-            <label for="project-description" class="form-label text-gray-300"
-              >* Project Description</label
-            >
-            <textarea
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="project-description"
-              name="project_description"
-              required
-              placeholder="Describe the project in detail"
-            ></textarea>
-          </div>
-
-          <div class="mb-3">
-            <label for="category" class="form-label text-gray-300"
-              >Category</label
-            >
-            <select
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="category"
-              name="category"
-              required
-            >
-              <option value="">Select a category</option>
-              <option value="1">Technology</option>
-              <option value="2">Design</option>
-              <option value="3">Content Writing</option>
-              <option value="4">Marketing</option>
-              <option value="5">Sales</option>
-              <option value="6">Customer Service</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="budget" class="form-label text-gray-300"
-              >* Budget</label
-            >
-            <input
-              type="text"
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="budget"
-              name="budget"
-              required
-              placeholder="Enter budget"
-            />
-          </div>
-
-          <div class="mb-3">
-            <label for="project-duration" class="form-label text-gray-300"
-              >Project Duration</label
-            >
-            <select
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="project-duration"
-              name="project_duration"
-            >
-              <option value="">Select project duration</option>
-              <option value="1 week">1 week</option>
-              <option value="1 month">1 month</option>
-              <option value="3 months">3 months</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="experience-level" class="form-label text-gray-300"
-              >Required Experience Level</label
-            >
-            <select
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="experience-level"
-              name="experience_level"
-            >
-              <option value="">Select required experience level</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="expert">Expert</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="skills" class="form-label text-gray-300"
-              >Required Skills</label
-            >
-            <input
-              type="text"
-              class="createjobscontainerinput bg-gray-800 text-white p-3 rounded-md"
-              id="skills"
-              name="skills"
-              placeholder="Enter required skills"
-            />
-          </div>
-
-          <button
-            type="submit"
-            class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
+      <!-- Job Creation Form -->
+      <form onsubmit="createJobListing(event)" class="space-y-6">
+        <div>
+          <label for="job-title" class="form-label text-gray-300 block"
+            >* Job Title</label
           >
-            Create Job Listing
-          </button>
-        </form>
-      </section>
-    </div>
+          <input
+            type="text"
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="job-title"
+            name="job_title"
+            required
+            placeholder="Enter job title"
+          />
+        </div>
+
+        <div>
+          <label
+            for="project-description"
+            class="form-label text-gray-300 block"
+            >* Project Description</label
+          >
+          <textarea
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="project-description"
+            name="project_description"
+            required
+            placeholder="Describe the project in detail"
+          ></textarea>
+        </div>
+
+        <div>
+          <label for="category" class="form-label text-gray-300 block"
+            >Category</label
+          >
+          <select
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="category"
+            name="category"
+            required
+          >
+            <option value="">Select a category</option>
+            <option value="1">Technology</option>
+            <option value="2">Design</option>
+            <option value="3">Content Writing</option>
+            <option value="4">Marketing</option>
+            <option value="5">Sales</option>
+            <option value="6">Customer Service</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="budget" class="form-label text-gray-300 block"
+            >* Budget</label
+          >
+          <input
+            type="text"
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="budget"
+            name="budget"
+            required
+            placeholder="Enter budget"
+          />
+        </div>
+
+        <div>
+          <label for="project-duration" class="form-label text-gray-300 block"
+            >Project Duration</label
+          >
+          <select
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="project-duration"
+            name="project_duration"
+          >
+            <option value="">Select project duration</option>
+            <option value="1 week">1 week</option>
+            <option value="1 month">1 month</option>
+            <option value="3 months">3 months</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="experience-level" class="form-label text-gray-300 block"
+            >Required Experience Level</label
+          >
+          <select
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="experience-level"
+            name="experience_level"
+          >
+            <option value="">Select required experience level</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="expert">Expert</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="skills" class="form-label text-gray-300 block"
+            >Required Skills</label
+          >
+          <input
+            type="text"
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            id="skills"
+            name="skills"
+            placeholder="Enter required skills"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 focus:outline-none"
+        >
+          Create Job Listing
+        </button>
+      </form>
+    </section>
   </body>
 </html>
