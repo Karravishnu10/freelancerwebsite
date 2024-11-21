@@ -60,6 +60,29 @@
           );
         }
       }
+      window.onload = () => {
+        // First load the nav.html content
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+
+            // Now fetch data for active freelancers, jobs, etc.
+            fetchData();
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+      };
     </script>
 
     <!-- TailwindCSS -->
