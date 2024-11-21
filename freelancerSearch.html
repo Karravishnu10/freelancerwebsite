@@ -58,6 +58,16 @@
           return;
         }
 
+        // Populate skills dropdown dynamically
+        const skillsDropdown = document.getElementById("skill");
+        const uniqueSkills = await fetchAllSkills();
+        uniqueSkills.forEach((skill) => {
+          const option = document.createElement("option");
+          option.value = skill;
+          option.textContent = skill;
+          skillsDropdown.appendChild(option);
+        });
+
         // Fetch freelancers based on search criteria
         const searchForm = document.querySelector("form");
         searchForm.addEventListener("submit", async (event) => {
@@ -95,23 +105,21 @@
                 "mb-4"
               );
               freelancerCard.innerHTML = `
-                  <div class="card-body">
-                    <h5 class="card-title text-xl font-semibold text-white">${
-                      freelancer.name
-                    }</h5>
-                    <p class="text-gray-300">${freelancer.email}</p>
-                    <p class="text-gray-400">Skills: ${freelancer.skills}</p>
-                    <p class="text-gray-300">Rate: $${
-                      freelancer.minimum_rate
-                    }/hr</p>
-                    <p class="text-gray-300">Rating: ${
-                      freelancer.rating || "Not rated"
-                    }</p>
-                    <a href="/messaging?recipient_id=${
-                      freelancer.id
-                    }" class="inline-block bg-blue-600 text-white py-2 px-4 rounded-md mt-2 hover:bg-blue-700">Message</a>
-                  </div>
-                `;
+            <div class="card-body">
+              <h5 class="card-title text-xl font-semibold text-white">${
+                freelancer.name
+              }</h5>
+              <p class="text-gray-300">${freelancer.email}</p>
+              <p class="text-gray-400">Skills: ${freelancer.skills}</p>
+              <p class="text-gray-300">Rate: $${freelancer.minimum_rate}/hr</p>
+              <p class="text-gray-300">Rating: ${
+                freelancer.rating || "Not rated"
+              }</p>
+              <a href="/messaging?recipient_id=${
+                freelancer.id
+              }" class="inline-block bg-blue-600 text-white py-2 px-4 rounded-md mt-2 hover:bg-blue-700">Message</a>
+            </div>
+          `;
               resultsContainer.appendChild(freelancerCard); // Append the card to results container
             });
           } else {
@@ -121,6 +129,26 @@
         });
       };
 
+      // Fetch all unique skills from users
+      const fetchAllSkills = async () => {
+        const usersRef = ref(database, "users");
+        const snapshot = await get(usersRef);
+        const users = snapshot.val() || {};
+
+        const skillsSet = new Set(); // Use a Set to ensure unique skills
+        Object.values(users).forEach((user) => {
+          if (user.skills) {
+            const skillsArray = user.skills
+              .split(",")
+              .map((skill) => skill.trim());
+            skillsArray.forEach((skill) => skillsSet.add(skill)); // Add each skill to the Set
+          }
+        });
+
+        return Array.from(skillsSet); // Convert the Set back to an array
+      };
+
+      // Fetch freelancers from Firebase
       // Fetch freelancers from Firebase
       const fetchFreelancers = async (
         searchQuery,
@@ -132,23 +160,31 @@
         const snapshot = await get(usersRef); // Get data from Firebase
         const freelancers = snapshot.val() || {}; // Handle empty data
 
+        console.log("Freelancers Data:", freelancers); // Debugging: Check fetched data
+
         // Filter freelancers based on the search criteria
         const filteredFreelancers = Object.values(freelancers).filter(
           (freelancer) => {
+            const name = freelancer.name || ""; // Default to empty string
+            const email = freelancer.email || ""; // Default to empty string
+            const skills = freelancer.skills || ""; // Default to empty string
+            const rating = parseInt(freelancer.rating) || 0; // Default rating is 0
+            const minimumRate = freelancer.minimum_rate
+              ? parseInt(freelancer.minimum_rate)
+              : null; // Keep as null if missing
+
             const matchesSearch =
               !searchQuery ||
-              freelancer.name
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
-              freelancer.email
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase());
+              name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              email.toLowerCase().includes(searchQuery.toLowerCase());
 
             const matchesSkill =
-              !skill ||
-              freelancer.skills.toLowerCase().includes(skill.toLowerCase());
-            const matchesRating = !minRating || freelancer.rating >= minRating;
-            const matchesRate = freelancer.minimum_rate <= maxRate;
+              !skill || skills.toLowerCase().includes(skill.toLowerCase());
+            const matchesRating = !minRating || rating >= parseInt(minRating);
+
+            // If minimumRate is null, ignore maxRate check for this user
+            const matchesRate =
+              minimumRate === null || minimumRate <= parseInt(maxRate);
 
             return (
               matchesSearch && matchesSkill && matchesRating && matchesRate
@@ -156,6 +192,7 @@
           }
         );
 
+        console.log("Filtered Freelancers:", filteredFreelancers); // Debugging: Check filtered results
         return filteredFreelancers; // Return filtered freelancers
       };
     </script>
@@ -190,7 +227,7 @@
               type="search"
               name="search"
               id="search"
-              class="form-control w-full px-4 py-2 rounded-md text-gray-700"
+              class="bg-gray-800 text-white w-full px-4 py-2 rounded-md"
               placeholder="Search freelancers"
               aria-label="Search freelancers"
             />
@@ -209,12 +246,10 @@
               <select
                 name="skill"
                 id="skill"
-                class="form-select w-full px-4 py-2 rounded-md"
+                class="bg-gray-800 text-white w-full px-4 py-2 rounded-md"
               >
                 <option value="">Select skills</option>
-                <option value="JavaScript">JavaScript</option>
-                <option value="Python">Python</option>
-                <option value="React">React</option>
+                <!-- Dynamic options will be populated here -->
               </select>
             </div>
 
@@ -229,7 +264,7 @@
               <select
                 name="min-rating"
                 id="min-rating"
-                class="form-select w-full px-4 py-2 rounded-md"
+                class="bg-gray-800 text-white w-full px-4 py-2 rounded-md"
               >
                 <option value="">Select option</option>
                 <option value="1">★☆☆☆☆</option>
