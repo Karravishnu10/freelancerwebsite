@@ -189,6 +189,27 @@
           }
         });
       };
+
+      document
+        .getElementById("logout-button")
+        .addEventListener("click", async () => {
+          try {
+            // Sign out the user
+            await auth.signOut();
+
+            // Clean up localStorage
+            localStorage.removeItem("userUid");
+            localStorage.removeItem("userEmail");
+
+            // Redirect to the login page
+            alert("You have been logged out.");
+            window.location.href = "/login.html";
+          } catch (error) {
+            console.error("Error during logout:", error);
+            alert("An error occurred while logging out. Please try again.");
+          }
+        });
+
       window.onload = () => {
         displayPortfolio();
         // First load the nav.html content
@@ -302,7 +323,8 @@
             <!-- Logout button -->
             <form id="logout-form" class="mt-4">
               <button
-                type="submit"
+                type="button"
+                id="logout-button"
                 class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 focus:outline-none"
               >
                 Logout
