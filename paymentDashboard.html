@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+    <!-- Navbar will be injected here -->
+
+    <main class="container mx-auto p-6 w-4/5">
+      <h1 class="text-3xl font-semibold mb-4">Payment Dashboard</h1>
+      <p class="mb-4">
+        Manage your earnings, payment history, and payment methods.
+      </p>
+      <div class="flex space-x-4 mb-6">
+        <div
+          class="tab-link p-3 cursor-pointer bg-gray-700 rounded-md"
+          onclick="showTab('earnings-tab')"
+        >
+          Earnings
+        </div>
+        <div
+          class="tab-link p-3 cursor-pointer bg-gray-700 rounded-md"
+          onclick="showTab('paymenthistory-tab')"
+        >
+          Payment History
+        </div>
+        <div
+          class="tab-link p-3 cursor-pointer bg-gray-700 rounded-md"
+          onclick="showTab('managepayments-tab')"
+        >
+          Manage Payments
+        </div>
+      </div>
+
+      <div id="earnings-tab" class="tab-content">
+        <div class="text-center">
+          <h3>Total Earnings</h3>
+          <p id="total-earnings">$0.00</p>
+        </div>
+      </div>
+
+      <div id="paymenthistory-tab" class="tab-content" style="display: none">
+        <div class="paymenthistory-table">
+          <table class="min-w-full">
+            <thead>
+              <tr>
+                <th class="px-4 py-2">Date</th>
+                <th class="px-4 py-2">Amount</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Contract</th>
+              </tr>
+            </thead>
+            <tbody id="payment-history-body">
+              <!-- Payments will be dynamically inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="managepayments-tab" class="tab-content" style="display: none">
+        <div id="completed-contracts" class="mb-3">
+          <h4>Your Completed Contracts (Freelancer)</h4>
+          <div id="completed-freelancer-contracts">
+            <!-- Freelancer Completed Contracts will go here -->
+          </div>
+        </div>
+        <div id="completed-employer-contracts" class="mb-3">
+          <h4>Your Completed Contracts (Employer)</h4>
+          <div id="completed-employer-contracts-list">
+            <!-- Employer Completed Contracts will go here -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+        set,
+        update,
+        query,
+        orderByChild,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const auth = getAuth(app);
+      let currentUserId = null;
+
+      // Function to handle tab changes
+      window.showTab = function (tabId) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll(".tab-content");
+        tabContents.forEach((tab) => {
+          tab.style.display = "none";
+        });
+
+        // Remove active state from all tab links
+        const tabLinks = document.querySelectorAll(".tab-link");
+        tabLinks.forEach((link) => link.classList.remove("active"));
+
+        // Show the selected tab content
+        document.getElementById(tabId).style.display = "block";
+
+        // Add active state to the clicked tab link
+        document
+          .querySelector(`[onclick="showTab('${tabId}')"]`)
+          .classList.add("active");
+      };
+
+      // Fetch Payment History
+      async function fetchPaymentHistory() {
+        const paymentsRef = ref(db, "payments");
+        const snapshot = await get(paymentsRef);
+        const payments = snapshot.val() || {};
+
+        const paymentHistory = Object.values(payments).filter(
+          (payment) => payment.freelancer_id === currentUserId
+        );
+        displayPaymentHistory(paymentHistory);
+        fetchCompletedContracts();
+      }
+
+      // Display Payment History
+      function displayPaymentHistory(payments) {
+        const paymentHistoryBody = document.getElementById(
+          "payment-history-body"
+        );
+        paymentHistoryBody.innerHTML = "";
+
+        if (payments.length === 0) {
+          paymentHistoryBody.innerHTML =
+            "<tr><td colspan='4'>No payments found.</td></tr>";
+        } else {
+          payments.forEach((payment) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+            <td>${payment.transaction_date}</td>
+            <td>$${payment.amount}</td>
+            <td>${payment.status}</td>
+            <td>${payment.contract.job.title}</td>
+          `;
+            paymentHistoryBody.appendChild(row);
+          });
+        }
+      }
+
+      // Fetch Completed Contracts
+      async function fetchCompletedContracts() {
+        const contractsRef = ref(db, "contracts");
+        const snapshot = await get(contractsRef);
+        const contracts = snapshot.val() || {};
+
+        // Filter contracts where the current user is either freelancer or employer, and the contract is completed
+        const freelancerContracts = Object.values(contracts).filter(
+          (contract) =>
+            contract.freelancer_id === currentUserId &&
+            contract.status === "completed"
+        );
+        const employerContracts = Object.values(contracts).filter(
+          (contract) =>
+            contract.employer_id === currentUserId &&
+            contract.status === "completed"
+        );
+
+        // Display the completed contracts for the freelancer and employer
+        displayFreelancerCompletedContracts(freelancerContracts);
+        displayEmployerCompletedContracts(employerContracts);
+        console.log(employerContracts);
+      }
+
+      function displayFreelancerCompletedContracts(contracts) {
+        const freelancerContainer = document.getElementById(
+          "completed-freelancer-contracts"
+        );
+        freelancerContainer.innerHTML = "";
+
+        contracts.forEach(async (contract) => {
+          // Fetch the job details using the job_id
+          const jobRef = ref(db, `jobs/${contract.job_id}`);
+          const jobSnapshot = await get(jobRef);
+          const job = jobSnapshot.val() || {};
+
+          // Fetch the employer details using the employer_id
+          const employerRef = ref(db, `users/${contract.employer_id}`);
+          const employerSnapshot = await get(employerRef);
+          const employer = employerSnapshot.val() || {};
+
+          const contractHTML = `
+            <div class="mb-3 flex items-center justify-between">
+                <p class="text-white">${job.title} - Employer: ${employer.name}</p>
+                <button class="btn btn-primary">View Details</button>
+            </div>
+            `;
+          freelancerContainer.innerHTML += contractHTML;
+        });
+      }
+
+      // Display Completed Contracts (Employer) with "Initiate Payment" button
+      // Display Completed Contracts (Employer) with "Initiate Payment" button
+      function displayEmployerCompletedContracts(contracts) {
+        const employerContainer = document.getElementById(
+          "completed-employer-contracts-list"
+        );
+        employerContainer.innerHTML = "";
+
+        contracts.forEach(async (contract) => {
+          // Fetch the job details using the job_id
+          const jobRef = ref(db, `jobs/${contract.job_id}`);
+          const jobSnapshot = await get(jobRef);
+          const job = jobSnapshot.val() || {};
+
+          // Fetch the freelancer details using the freelancer_id
+          const freelancerRef = ref(db, `users/${contract.freelancer_id}`);
+          const freelancerSnapshot = await get(freelancerRef);
+          const freelancer = freelancerSnapshot.val() || {};
+
+          const contractHTML = `
+            <div class="mb-3 flex items-center justify-between">
+                <p class="text-white">${job.title} - Freelancer: ${freelancer.name}</p>
+                <button class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700" 
+                        onclick="initiatePayment('${contract.id}')">
+                Initiate Payment
+                </button>
+            </div>
+            `;
+          employerContainer.innerHTML += contractHTML;
+        });
+      }
+
+      // Initiate Payment function
+      window.initiatePayment = function (contractId) {
+        // Get contract details from the database
+        // const contractRef = ref(db, `contracts/${contractId}`);
+        // get(contractRef).then((snapshot) => {
+        //   const contract = snapshot.val();
+        //   if (contract) {
+        //     const freelancerId = contract.freelancer_id;
+        //     const jobTitle = contract.job_id;
+        //     const amount = contract.job.budget; // assuming budget is the payment amount
+
+        //     // Proceed with initiating the payment (can be connected with Stripe or other payment gateways)
+        alert(`Initiating payment`);
+
+        //     // Further logic to initiate payment...
+        //   }
+        // });
+      };
+
+      // Load Navbar
+      window.onload = () => {
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUserId = user.uid;
+            fetchPaymentHistory(); // Proceed if the user is logged in
+          } else {
+            window.location.href = "/login.html"; // Redirect to login page if not logged in
+          }
+        });
+      };
+    </script>
+  </body>
+</html>

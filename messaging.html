@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Messaging</title>
+
+    <!-- Firebase Configuration -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+        set,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import { getAuth } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      const auth = getAuth(app);
+
+      window.onload = async () => {
+        // Load the navigation bar
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+
+        // Get the logged-in user's ID
+        const userId = localStorage.getItem("userUid");
+        if (!userId) {
+          console.error("User not logged in or user ID not found.");
+          return;
+        }
+
+        // Fetch all users (contacts) from Firebase
+        const usersRef = ref(database, "users");
+        const snapshot = await get(usersRef);
+        const users = snapshot.val() || {};
+
+        // Populate the contacts list, excluding the logged-in user
+        const contactsContainer = document.getElementById("contact-list");
+        contactsContainer.innerHTML = ""; // Clear existing contacts
+
+        // Loop through all users, and display them except the logged-in user
+        Object.keys(users).forEach((contactId) => {
+          if (contactId !== userId) {
+            // Skip the logged-in user
+            const contact = users[contactId];
+
+            const contactCard = document.createElement("div");
+            contactCard.classList.add(
+              "contact",
+              "cursor-pointer",
+              "bg-gray-800",
+              "p-4",
+              "rounded-md",
+              "shadow-md",
+              "mb-4"
+            );
+            contactCard.innerHTML = `
+                <h3 class="text-white text-xl">${contact.name}</h3>
+                <p class="text-gray-300">${contact.email}</p>
+              `;
+            // On click, load conversation with the selected contact
+            contactCard.onclick = () => loadConversation(userId, contactId);
+
+            contactsContainer.appendChild(contactCard);
+          }
+        });
+      };
+
+      // Function to load the conversation
+      const loadConversation = async (userId, recipientId) => {
+        localStorage.setItem("recipientId", recipientId); // Store recipient ID in localStorage
+
+        const conversationRef = ref(
+          database,
+          `conversations/${userId}_${recipientId}`
+        );
+        const conversationSnapshot = await get(conversationRef);
+        const conversation = conversationSnapshot.exists()
+          ? conversationSnapshot.val()
+          : [];
+
+        // Update UI with the conversation
+        const messageContainer = document.getElementById("messages");
+        messageContainer.innerHTML = ""; // Clear previous messages
+
+        if (conversation.length > 0) {
+          conversation.forEach((message) => {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add(
+              message.sender === userId ? "sent" : "received"
+            );
+            messageDiv.innerHTML = `
+                <p>${message.content}</p>
+                <small>${message.timestamp}</small>
+              `;
+            messageContainer.appendChild(messageDiv);
+          });
+        } else {
+          messageContainer.innerHTML =
+            "<p>No messages yet. Start the conversation now!</p>";
+        }
+      };
+
+      // Function to send a message
+      const sendMessage = async () => {
+        const messageText = document.getElementById("message-text").value;
+        const recipientId = localStorage.getItem("recipientId");
+        const userId = localStorage.getItem("userUid");
+        const timestamp = new Date().toISOString();
+
+        if (messageText.trim() !== "") {
+          // Ensure recipientId exists
+          if (!recipientId) {
+            alert("No recipient selected.");
+            return;
+          }
+
+          // Create new message in the database for both directions
+          const messageRef = ref(
+            database,
+            `conversations/${userId}_${recipientId}`
+          );
+          const newMessageKey = (await get(messageRef)).val()
+            ? Date.now().toString()
+            : "1";
+
+          // Set the new message in Firebase
+          set(
+            ref(
+              database,
+              `conversations/${userId}_${recipientId}/${newMessageKey}`
+            ),
+            {
+              sender: userId,
+              recipient: recipientId,
+              content: messageText,
+              timestamp: timestamp,
+            }
+          );
+
+          set(
+            ref(
+              database,
+              `conversations/${recipientId}_${userId}/${newMessageKey}`
+            ),
+            {
+              sender: userId,
+              recipient: recipientId,
+              content: messageText,
+              timestamp: timestamp,
+            }
+          );
+
+          loadConversation(userId, recipientId); // Reload conversation after sending
+
+          document.getElementById("message-text").value = ""; // Clear input after sending
+        }
+      };
+
+      // Ensure that the Send button calls the sendMessage function
+      document.getElementById("send-message-btn").onclick = sendMessage;
+    </script>
+
+    <!-- TailwindCSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+
+    <main class="container mx-auto p-6 w-3/5">
+      <h1 class="text-3xl font-bold mb-4 text-center">Messaging</h1>
+      <p class="text-lg text-center mb-6">
+        View and manage your conversations with other users.
+      </p>
+
+      <!-- Contacts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Contact List Section -->
+        <div class="col-span-1">
+          <h2 class="text-xl font-semibold mb-4">Contacts</h2>
+          <div id="contact-list" class="space-y-4">
+            <!-- Contacts will be populated here dynamically -->
+          </div>
+        </div>
+
+        <!-- Messages Section -->
+        <div class="col-span-2">
+          <h2 id="recipient-name" class="text-xl font-semibold mb-4"></h2>
+          <p id="recipient-email" class="text-sm text-gray-400 mb-4"></p>
+          <div id="messages" class="mb-6">
+            <!-- Messages will be populated here dynamically -->
+          </div>
+
+          <!-- Message Input Section -->
+          <div class="flex items-center space-x-4">
+            <input
+              type="text"
+              id="message-text"
+              placeholder="Type a message..."
+              class="w-full p-3 rounded-md text-gray-700"
+            />
+            <button
+              id="send-message-btn"
+              class="bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

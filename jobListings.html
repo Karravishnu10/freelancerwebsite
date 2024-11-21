@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Listings</title>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+        query,
+        orderByChild,
+        equalTo,
+        set,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      const auth = getAuth(app);
+
+      let currentUserId;
+
+      // Check if the user is logged in
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUserId = user.uid;
+          fetchJobListings();
+        } else {
+          window.location.href = "/login.html"; // Redirect to login page if not logged in
+        }
+      });
+
+      // Fetch job listings from Firebase
+      async function fetchJobListings() {
+        const jobsRef = ref(database, "jobs");
+        const snapshot = await get(jobsRef);
+        const jobs = snapshot.val() || {};
+
+        const categoryFilter = new URLSearchParams(window.location.search).get(
+          "category"
+        );
+        const skillFilter = new URLSearchParams(window.location.search).get(
+          "skill"
+        );
+        const searchQuery = new URLSearchParams(window.location.search).get(
+          "search_query"
+        );
+
+        // Add job ID to each job object
+        const jobList = Object.keys(jobs).map((key) => {
+          return { id: key, ...jobs[key] }; // Add the Firebase key (job ID) as 'id'
+        });
+
+        const filteredJobs = jobList.filter((job) => {
+          const matchesCategory = categoryFilter
+            ? job.category_id === categoryFilter
+            : true;
+          const matchesSkill = skillFilter
+            ? job.skills?.includes(skillFilter)
+            : true;
+          const matchesSearch = searchQuery
+            ? job.title.toLowerCase().includes(searchQuery.toLowerCase())
+            : true;
+          return matchesCategory && matchesSkill && matchesSearch;
+        });
+
+        displayJobs(filteredJobs);
+      }
+
+      // Display jobs in the DOM
+      function displayJobs(jobs) {
+        const jobResultsContainer = document.getElementById("job-results");
+        jobResultsContainer.innerHTML = ""; // Clear existing results
+
+        if (jobs.length === 0) {
+          jobResultsContainer.innerHTML = "<p>No jobs found.</p>";
+          return;
+        }
+
+        jobs.forEach((job) => {
+          const jobCard = document.createElement("article");
+          jobCard.classList.add("bg-gray-800", "p-6", "rounded-lg", "mb-4");
+
+          jobCard.innerHTML = `
+      <h2 class="text-xl font-semibold text-white">${job.title}</h2>
+      <p class="text-gray-300">${job.description}</p>
+      <span class="bg-info text-white p-2 mt-3">Budget: $${job.budget}</span>
+      <div class="mt-3">
+        <button class="apply-btn bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700" data-job-id="${job.id}">
+          Apply
+        </button>
+        <button class="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700">
+          Save
+        </button>
+      </div>
+    `;
+          jobResultsContainer.appendChild(jobCard);
+        });
+
+        // Attach event listener to each "Apply" button after jobs are rendered
+        const applyButtons = document.querySelectorAll(".apply-btn");
+        applyButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const jobId = button.getAttribute("data-job-id");
+            applyForJob(jobId);
+          });
+        });
+      }
+
+      // Handle applying for a job
+      // Handle applying for a job
+      async function applyForJob(jobId) {
+        const contractRef = ref(database, "contracts");
+        const snapshot = await get(contractRef);
+        const contracts = snapshot.val() || {};
+
+        // Fetch the job details to get employer information
+        const jobRef = ref(database, `jobs/${jobId}`);
+        const jobSnapshot = await get(jobRef);
+        const job = jobSnapshot.val();
+
+        if (!job) {
+          alert("Job not found.");
+          return;
+        }
+
+        const employerId = job.employer_id;
+        const employerName = job.employer_name;
+
+        // Check if the user has already applied for the job
+        const existingContract = Object.values(contracts).find(
+          (contract) =>
+            contract.job_id === jobId &&
+            contract.freelancer_id === currentUserId
+        );
+
+        if (existingContract) {
+          alert("You have already applied for this job.");
+        } else {
+          // Create a new contract (application)
+          const newContractId = Date.now().toString(); // Unique contract ID
+          set(ref(database, `contracts/${newContractId}`), {
+            job_id: jobId,
+            freelancer_id: currentUserId,
+            employer_id: employerId, // Store the employer's ID
+            employer_name: employerName, // Store the employer's name
+            status: "pending", // Set the status of the contract as pending
+          });
+
+          alert("Your application has been submitted.");
+        }
+      }
+
+      // Handle search form submission
+      document
+        .getElementById("search-form")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          fetchJobListings();
+        });
+
+      // Load the navigation bar dynamically
+      window.onload = () => {
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+      };
+    </script>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+    <!-- Navbar will be injected here -->
+
+    <main class="container mx-auto p-6 w-3/5">
+      <!-- Flash Messages -->
+      <div id="flash-messages" class="mb-4">
+        <!-- Flash messages will go here dynamically -->
+      </div>
+
+      <h1 class="text-center text-3xl font-semibold mb-4">Job Listings</h1>
+      <p class="text-center mb-4">
+        Browse and search for available job opportunities
+      </p>
+
+      <form id="search-form" class="mb-5">
+        <div class="flex gap-4 mb-4">
+          <input
+            type="search"
+            name="search_query"
+            class="bg-gray-800 text-white p-3 rounded-md w-full"
+            placeholder="Search jobs"
+            aria-label="Search jobs"
+          />
+          <button
+            type="submit"
+            class="bg-blue-600 text-white py-3 px-4 rounded-md"
+          >
+            Search
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <select
+              name="category"
+              class="bg-gray-800 text-white p-3 rounded-md w-full"
+            >
+              <option value="">All categories</option>
+              <option value="1">Technology</option>
+              <option value="2">Design</option>
+              <option value="3">Content Writing</option>
+              <option value="4">Marketing</option>
+              <option value="5">Sales</option>
+              <option value="6">Customer Service</option>
+            </select>
+          </div>
+          <div>
+            <select
+              name="skill"
+              class="bg-gray-800 text-white p-3 rounded-md w-full"
+            >
+              <option value="">All skills</option>
+              <option value="HTML">HTML</option>
+              <option value="CSS">CSS</option>
+              <option value="JavaScript">JavaScript</option>
+              <option value="Python">Python</option>
+            </select>
+          </div>
+        </div>
+      </form>
+
+      <section id="job-results" class="mt-6">
+        <!-- Job results will be dynamically loaded here -->
+      </section>
+    </main>
+  </body>
+</html>

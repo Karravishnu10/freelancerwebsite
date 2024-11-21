@@ -1,0 +1,408 @@
+<header>
+  <nav
+    class="navbar flex items-center justify-between p-4"
+    aria-label="Main Navigation"
+  >
+    <!-- Navbar Brand -->
+    <div class="navbar-brand flex items-center">
+      <span class="text-2xl font-bold">Freelancer</span>
+    </div>
+
+    <!-- Navbar Links -->
+    <ul class="nav-links flex space-x-6 text-lg items-center" role="menubar">
+      <li role="none">
+        <a
+          href="/home.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Home</a
+        >
+      </li>
+      <li role="none">
+        <a
+          href="/freelancerSearch.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Freelancers</a
+        >
+      </li>
+      <li role="none">
+        <a
+          href="/jobListings.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Jobs</a
+        >
+      </li>
+      <li role="none">
+        <a
+          href="/createJobListings.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Create Jobs</a
+        >
+      </li>
+      <li role="none">
+        <a
+          href="/messaging.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Messaging</a
+        >
+      </li>
+      <li role="none">
+        <a
+          href="/contractManagement.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Contracts</a
+        >
+      </li>
+      <li role="none">
+        <a
+          href="/paymentDashboard.html"
+          role="menuitem"
+          class="text-white hover:text-blue-400 transition-all"
+          >Payments</a
+        >
+      </li>
+      <li role="none">
+        <button
+          id="voice-command-btn"
+          onclick="toggleVoiceCommand()"
+          class="bg-gray-700 text-white rounded-md px-4 py-2 hover:bg-gray-600"
+          aria-label="Activate voice command"
+        >
+          Voice Command
+        </button>
+      </li>
+      <li role="none">
+        <button
+          class="hamburger-menu btn btn-link text-white"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-label="Toggle Menu"
+          onclick="toggleMenu()"
+        >
+          &#9776;
+        </button>
+        <ul
+          class="dropdown-menu bg-gray-800 text-white p-2 rounded-md"
+          id="hamburgerDropdown"
+          role="menu"
+          aria-expanded="false"
+          style="display: none"
+        >
+          <li role="none">
+            <button
+              id="accessibilityButton"
+              role="menuitem"
+              onclick="toggleAccessibilityPanel()"
+              class="dropdown-item bg-gray-700 text-white rounded-md px-4 py-2"
+              aria-label="Accessibility Settings"
+            >
+              Accessibility Settings
+            </button>
+          </li>
+          <li role="none">
+            <a
+              href="/helpcenter.html"
+              role="menuitem"
+              class="dropdown-item bg-gray-700 text-white rounded-md px-4 py-2"
+              >Help Center</a
+            >
+          </li>
+        </ul>
+      </li>
+      <li role="none">
+        <a
+          role="menuitem"
+          href="/profile.html"
+          class="text-white hover:text-blue-400 transition-all"
+          >Profile</a
+        >
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<!-- Accessibility Toolbar -->
+<div
+  id="accessibilityToolbar"
+  class="accessibility-toolbar"
+  role="dialog"
+  aria-labelledby="accessibilityTitle"
+  aria-hidden="true"
+  style="
+    display: none;
+    left: -260px;
+    position: fixed;
+    background-color: #f4f4f4;
+  "
+>
+  <h3 id="accessibilityTitle">Accessibility Tools</h3>
+  <ul>
+    <li>
+      <button
+        onclick="increaseText()"
+        jf-ext-button-ct="🔍 increase text"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🔍 Increase Text
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="decreaseText()"
+        jf-ext-button-ct="🔍 decrease text"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🔍 Decrease Text
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="toggleGrayscale()"
+        jf-ext-button-ct="🎨 grayscale"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🎨 Grayscale
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="toggleHighContrast()"
+        jf-ext-button-ct="🌓 high contrast"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🌓 High Contrast
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="toggleNegativeContrast()"
+        jf-ext-button-ct="⚫ negative contrast"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        ⚫ Negative Contrast
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="toggleLightBackground()"
+        jf-ext-button-ct="🌞 light background"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🌞 Light Background
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="underlineLinks()"
+        jf-ext-button-ct="🔗 links underline"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🔗 Links Underline
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="toggleReadableFont()"
+        jf-ext-button-ct="👓 readable font"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        👓 Readable Font
+      </button>
+    </li>
+    <li>
+      <button
+        onclick="resetAccessibility()"
+        jf-ext-button-ct="🔄 reset"
+        style="
+          color: #000000;
+          background-color: #ffffff;
+          border: 1px solid #000000;
+        "
+      >
+        🔄 Reset
+      </button>
+    </li>
+  </ul>
+</div>
+
+<script src="/navbar.js"></script>
+
+<style>
+  /* Custom Navbar Styles */
+  .navbar {
+    background-color: #1f2937; /* Dark background color */
+    padding: 15px 20px;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: #ffffff;
+  }
+
+  .nav-links a:hover {
+    color: #3b82f6; /* Blue on hover */
+  }
+
+  .active {
+    color: #3b82f6; /* Active link color */
+  }
+
+  .hamburger-menu {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+  }
+
+  .voice-command-btn {
+    background-color: #444;
+    color: #f8f9fa;
+    border-radius: 5px;
+  }
+
+  .voice-command-btn:hover {
+    background-color: #28a745;
+  }
+  /* Ensure the dropdown is properly positioned */
+  #hamburgerDropdown {
+    display: none; /* Initially hidden */
+    position: absolute;
+    right: 20px; /* Align to the right */
+    top: 50px; /* Position below the navbar */
+    background-color: #1f2937; /* Dark background */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Optional shadow */
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 9999; /* Ensure it's on top of other content */
+  }
+
+  #hamburgerDropdown li {
+    padding: 5px 10px;
+  }
+
+  #hamburgerDropdown a,
+  #hamburgerDropdown button {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+  }
+
+  #hamburgerDropdown a:hover,
+  #hamburgerDropdown button:hover {
+    background-color: #3b82f6; /* Highlight color on hover */
+  }
+
+  /* Accessibility Toolbar */
+  .accessibility-toolbar {
+    position: fixed;
+    top: 0;
+    left: -260px; /* Initially hidden off-screen */
+    width: 260px;
+    height: 100%;
+    background-color: #2d3748; /* Dark background to match the app's theme */
+    color: #ffffff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    transition: left 0.3s ease-in-out;
+    z-index: 1000;
+  }
+
+  .accessibility-toolbar h3 {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .accessibility-toolbar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .accessibility-toolbar ul li {
+    margin-bottom: 15px;
+  }
+
+  .accessibility-toolbar button,
+  .accessibility-toolbar a {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1em;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+
+  .accessibility-toolbar button:hover,
+  .accessibility-toolbar a:hover {
+    background-color: #3b82f6; /* Blue background on hover */
+    color: white;
+    text-decoration: none;
+  }
+
+  /* For specific icons if needed */
+  .accessibility-toolbar button i {
+    margin-right: 8px;
+  }
+
+  .accessibility-toolbar .reset-button {
+    background-color: #f56565; /* Red for reset */
+  }
+
+  .accessibility-toolbar .reset-button:hover {
+    background-color: #e53e3e;
+  }
+
+  /* Show/Hide the toolbar when toggled */
+  .accessibility-toolbar.active {
+    left: 0;
+  }
+</style>

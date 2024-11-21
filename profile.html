@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile</title>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+        update,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      const auth = getAuth(app);
+
+      // Load user data when authenticated
+      // Load user data when authenticated
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          const userId = user.uid;
+
+          // Get user data from Firebase
+          get(ref(database, "users/" + userId))
+            .then((snapshot) => {
+              const userData = snapshot.val();
+              if (userData) {
+                document.getElementById("profile-name").textContent =
+                  userData.name || "N/A";
+                document.getElementById("profile-email").textContent =
+                  userData.email || "N/A";
+                document.getElementById("profile-rate").textContent =
+                  userData.minimum_rate || "0";
+                document.getElementById("profile-skills").textContent =
+                  userData.skills || "N/A";
+                document.getElementById("profile-rating").textContent =
+                  userData.rating || "0";
+
+                // Display portfolio URL if available
+                if (userData.portfolio_url) {
+                  const portfolioLink =
+                    document.getElementById("profile-portfolio");
+                  portfolioLink.innerHTML = `<a href="${userData.portfolio_url}" target="_blank">View Portfolio</a>`;
+                }
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching user data:", error);
+            });
+        } else {
+          // Redirect to login if not authenticated
+          window.location.href = "/login.html";
+        }
+      });
+
+      window.onload = () => {
+        // First load the nav.html content
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+      };
+    </script>
+
+    <!-- TailwindCSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+
+    <!-- Main content container -->
+    <div class="container mx-auto p-6 w-3/5">
+      <section id="profile">
+        <div class="card bg-gray-800 text-white p-6 rounded-lg">
+          <div class="card-body">
+            <h4 class="card-title text-2xl font-bold">Profile Details</h4>
+            <p><strong>Name:</strong> <span id="profile-name">N/A</span></p>
+            <p><strong>Email:</strong> <span id="profile-email">N/A</span></p>
+            <p>
+              <strong>Minimum Hourly Rate:</strong> $<span id="profile-rate"
+                >0</span
+              >
+              per hour
+            </p>
+            <p><strong>Skills:</strong> <span id="profile-skills">N/A</span></p>
+            <p><strong>Rating:</strong> <span id="profile-rating">0</span></p>
+
+            <h5 class="mt-4 text-xl font-semibold">Update Your Profile</h5>
+            <form id="update-profile-form" class="mt-3">
+              <div class="mb-3">
+                <label
+                  for="minimum_rate"
+                  class="block text-sm font-medium text-gray-300"
+                  >Set Minimum Hourly Rate ($/hr):</label
+                >
+                <input
+                  type="number"
+                  id="minimum_rate"
+                  class="form-control w-full px-4 py-2 rounded-md text-gray-700"
+                  placeholder="Enter minimum rate"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label
+                  for="skills"
+                  class="block text-sm font-medium text-gray-300"
+                  >Skills (comma separated):</label
+                >
+                <input
+                  type="text"
+                  id="skills"
+                  class="form-control w-full px-4 py-2 rounded-md text-gray-700"
+                  placeholder="Enter skills"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label
+                  for="portfolio-upload"
+                  class="block text-sm font-medium text-gray-300"
+                  >Upload Portfolio (PDF/Image):</label
+                >
+                <input
+                  type="file"
+                  id="portfolio-upload"
+                  class="form-control w-full px-4 py-2 rounded-md text-gray-700"
+                />
+              </div>
+
+              <button
+                type="submit"
+                class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
+                id="upload-portfolio-btn"
+              >
+                Upload Portfolio
+              </button>
+
+              <button
+                type="submit"
+                class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
+              >
+                Save Changes
+              </button>
+            </form>
+
+            <!-- Logout button -->
+            <form id="logout-form" class="mt-4">
+              <button
+                type="submit"
+                class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 focus:outline-none"
+              >
+                Logout
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+
+    <!-- Include Firebase SDK -->
+    <script type="module">
+      // Firebase Configuration
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import { getAuth } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      const auth = getAuth(app);
+
+      // Function to fetch data from Firebase
+      const fetchData = async () => {
+        try {
+          // Fetch Active Freelancers Count
+          const freelancersSnapshot = await get(ref(database, "users"));
+          const activeFreelancers = freelancersSnapshot.exists()
+            ? freelancersSnapshot.numChildren()
+            : 0;
+
+          // Fetch Available Jobs Count
+          const jobsSnapshot = await get(ref(database, "jobs"));
+          const availableJobs = jobsSnapshot.exists()
+            ? jobsSnapshot.numChildren()
+            : 0;
+
+          // Fetch First Job
+          const firstJobSnapshot = await get(ref(database, "jobs"))
+            .orderByKey()
+            .limitToFirst(1);
+          const firstJob = firstJobSnapshot.exists()
+            ? Object.values(firstJobSnapshot.val())[0]
+            : null;
+
+          // Fetch Top Rated Freelancer
+          const topRatedFreelancerSnapshot = await get(ref(database, "users"))
+            .orderByChild("rating")
+            .limitToLast(1);
+          const topRatedUser = topRatedFreelancerSnapshot.exists()
+            ? Object.values(topRatedFreelancerSnapshot.val())[0]
+            : null;
+
+          // Update the UI with the fetched data
+          document.getElementById("active-freelancers").innerText =
+            activeFreelancers;
+          document.getElementById("available-jobs").innerText = availableJobs;
+
+          if (firstJob) {
+            document.getElementById("first-job-title").innerText =
+              firstJob.title;
+            document.getElementById("first-job-budget").innerText =
+              firstJob.budget;
+          }
+
+          if (topRatedUser) {
+            document.getElementById("top-rated-name").innerText =
+              topRatedUser.name;
+            document.getElementById("top-rated-email").innerText =
+              topRatedUser.email;
+            document.getElementById("top-rated-rating").innerText =
+              topRatedUser.rating.toFixed(2);
+          } else {
+            document.getElementById("top-rated-user").innerText =
+              "No top-rated freelancer available yet.";
+          }
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      };
+
+      window.onload = () => {
+        // First load the nav.html content
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+
+            // Now fetch data for active freelancers, jobs, etc.
+            fetchData();
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+      };
+    </script>
+
+    <!-- TailwindCSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+    <section id="welcome-banner" class="text-center py-8">
+      <h1 class="text-4xl font-semibold">Welcome to Our Freelance Platform</h1>
+      <p class="mt-2 text-xl">
+        Find top talent and exciting job opportunities all in one place.
+      </p>
+      <form action="/find-freelancers" method="GET" class="mt-6">
+        <input
+          type="search"
+          name="search"
+          placeholder="Search for freelancers"
+          aria-label="Search for freelancers"
+          class="px-4 py-2 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <button
+          type="submit"
+          class="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
+        >
+          Search
+        </button>
+        <button
+          onclick="window.location.href='/freelancerSearch.html'"
+          class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none"
+        >
+          Find Freelancers
+        </button>
+      </form>
+    </section>
+
+    <section
+      id="stats"
+      class="flex justify-between px-8 py-6 bg-gray-800 text-lg"
+    >
+      <div>
+        <strong class="mr-2">Active Freelancers:</strong
+        ><span id="active-freelancers">0</span>
+      </div>
+      <div>
+        <strong class="mr-2">Available Jobs:</strong
+        ><span id="available-jobs">0</span>
+      </div>
+    </section>
+
+    <section id="featured-jobs" class="py-8 px-8 bg-gray-800">
+      <h2 class="text-2xl font-semibold text-center">Featured Job Listings</h2>
+      <div class="card mt-6 bg-gray-700 text-white p-6 rounded-md">
+        <h5 class="text-xl font-medium" id="first-job-title">Job Title</h5>
+        <h6 class="text-md text-gray-400 mt-2">
+          Budget: $<span id="first-job-budget">0</span>
+        </h6>
+      </div>
+    </section>
+
+    <section id="top-rated-freelancers" class="py-8 px-8 bg-gray-800">
+      <h2 class="text-2xl font-semibold text-center">Top-Rated Freelancer</h2>
+      <div id="top-rated-user" class="mt-6 text-center">
+        <div class="card bg-gray-700 text-white p-6 rounded-md mx-auto w-1/3">
+          <h5 class="text-xl font-medium" id="top-rated-name">
+            Freelancer Name
+          </h5>
+          <h6 class="text-md text-gray-400 mt-2" id="top-rated-email">
+            email@example.com
+          </h6>
+          <p class="mt-2 text-lg" id="top-rated-rating">Rating: 0</p>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contract Management</title>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+        update,
+        set,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      const auth = getAuth(app);
+
+      let currentUserId;
+
+      // Check if the user is logged in
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUserId = user.uid;
+          fetchContracts();
+        } else {
+          window.location.href = "/login.html"; // Redirect to login page if not logged in
+        }
+      });
+
+      // Fetch contracts from Firebase
+      async function fetchContracts() {
+        const contractsRef = ref(database, "contracts");
+        const snapshot = await get(contractsRef);
+        const contracts = snapshot.val() || {};
+
+        const filteredContracts = [];
+
+        // Filter contracts based on logged-in user's role (employer/freelancer)
+        for (const contractId in contracts) {
+          const contract = contracts[contractId];
+
+          if (
+            contract.employer_id === currentUserId ||
+            contract.freelancer_id === currentUserId
+          ) {
+            // Retrieve related job and user details from Firebase
+            const jobRef = ref(database, `jobs/${contract.job_id}`);
+            const jobSnapshot = await get(jobRef);
+            const job = jobSnapshot.val() || {};
+
+            // Assuming job contains job_title and freelancer/employer references
+            const freelancerRef = ref(
+              database,
+              `users/${contract.freelancer_id}`
+            );
+            const freelancerSnapshot = await get(freelancerRef);
+            const freelancer = freelancerSnapshot.val() || {};
+
+            const employerRef = ref(database, `users/${contract.employer_id}`);
+            const employerSnapshot = await get(employerRef);
+            const employer = employerSnapshot.val() || {};
+
+            filteredContracts.push({
+              id: contractId,
+              job_title: job.title || "No Title",
+              freelancer_name: freelancer.name || "Unknown Freelancer",
+              employer_name: employer.name || "Unknown Employer",
+              start_date: contract.start_date,
+              end_date: contract.end_date,
+              status: contract.status,
+            });
+          }
+        }
+
+        displayContracts(filteredContracts);
+      }
+
+      // Display contracts in the DOM
+      function displayContracts(contracts) {
+        const contractTableBody = document.querySelector(
+          "#contract-table tbody"
+        );
+        contractTableBody.innerHTML = ""; // Clear existing rows
+
+        if (contracts.length === 0) {
+          contractTableBody.innerHTML =
+            "<tr><td colspan='7' class='text-center'>No contracts found.</td></tr>";
+          return;
+        }
+
+        contracts.forEach((contract) => {
+          const contractRow = document.createElement("tr");
+          contractRow.setAttribute("data-contract-id", contract.id);
+          contractRow.classList.add("bg-gray-800", "text-white");
+
+          contractRow.innerHTML = `
+              <td class="px-4 py-2">${contract.job_title}</td>
+              <td class="px-4 py-2">${contract.freelancer_name}</td>
+              <td class="px-4 py-2">${contract.employer_name}</td>
+              <td class="px-4 py-2">${
+                contract.start_date ? contract.start_date : "-"
+              }</td>
+              <td class="px-4 py-2">${
+                contract.end_date ? contract.end_date : "-"
+              }</td>
+              <td id="status-${contract.id}" class="px-4 py-2">${
+            contract.status
+          }</td>
+              <td class="px-4 py-2">
+                <button class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700" onclick="showActionPopup('${
+                  contract.id
+                }')">View</button>
+                <button class="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700" onclick="showRatingPopup('${
+                  contract.id
+                }')">Rating</button>
+              </td>
+            `;
+          contractTableBody.appendChild(contractRow);
+        });
+      }
+
+      // Action Popup for changing status
+      //   window.showActionPopup = function (contractId) {
+      //     const actionModal = document.getElementById("actionModal");
+      //     const actionButtons = document.getElementById("action-buttons");
+
+      //     actionButtons.innerHTML = `
+      //         <button onclick="updateContractStatus('${contractId}', 'withdraw')">Withdraw Contract</button>
+      //     `;
+
+      //     actionModal.style.display = "block";
+      //   };
+
+      // Rating Popup for rating the user
+      // Action Popup for changing status
+      window.showActionPopup = function (contractId) {
+        const actionModal = document.getElementById("actionModal");
+        const actionButtons = document.getElementById("action-buttons");
+
+        // Check if the current user is the freelancer or employer for this contract
+        const contractRef = ref(database, "contracts/" + contractId);
+        get(contractRef).then((snapshot) => {
+          const contract = snapshot.val();
+
+          if (contract) {
+            const isFreelancer = contract.freelancer_id === currentUserId;
+            const isEmployer = contract.employer_id === currentUserId;
+
+            // If user is freelancer, show status options
+            if (isFreelancer) {
+              actionButtons.innerHTML = `
+                <button onclick="updateContractStatus('${contractId}', 'pending')">Pending</button>
+                <button onclick="updateContractStatus('${contractId}', 'in progress')">In Progress</button>
+                <button onclick="updateContractStatus('${contractId}', 'completed')">Completed</button>
+                `;
+            }
+            // If user is employer, show withdraw option
+            else if (isEmployer) {
+              actionButtons.innerHTML = `
+                <button onclick="updateContractStatus('${contractId}', 'withdraw')">Withdraw Contract</button>
+                `;
+            }
+
+            actionModal.style.display = "block"; // Show the modal
+          }
+        });
+      };
+
+      window.closeModal = function () {
+        document.getElementById("actionModal").style.display = "none";
+        document.getElementById("ratingModal").style.display = "none";
+      };
+
+      window.submitRating = function () {
+        const rating = document.getElementById("rating").value;
+
+        if (rating < 1 || rating > 5) {
+          alert("Please provide a rating between 1 and 5.");
+          return;
+        }
+
+        set(ref(database, "ratings/" + window.currentContractId), {
+          rating: rating,
+          contract_id: window.currentContractId,
+        })
+          .then(() => {
+            alert("Rating submitted successfully!");
+            closeModal();
+          })
+          .catch((error) => {
+            alert("Error submitting rating:", error);
+          });
+      };
+
+      // Ensure that these functions remain globally accessible
+      window.updateContractStatus = function (contractId, status) {
+        update(ref(database, "contracts/" + contractId), { status: status })
+          .then(() => {
+            alert("Contract status updated successfully.");
+            closeModal(); // Close the modal
+            fetchContracts(); // Refresh the contracts list
+          })
+          .catch((error) => {
+            alert("Error updating contract status:", error);
+          });
+      };
+
+      // Load the navigation bar dynamically
+      window.onload = () => {
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+      };
+    </script>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+    <!-- Navbar will be injected here -->
+
+    <main class="container mx-auto p-6 w-4/5">
+      <h1 class="text-3xl font-semibold mb-4">Contract Management</h1>
+      <p class="mb-4">
+        View and manage your active and past contracts. As a client, you can
+        create new contract proposals.
+      </p>
+
+      <table class="table-auto w-full text-left" id="contract-table">
+        <thead>
+          <tr>
+            <th class="px-4 py-2">Job Title</th>
+            <th class="px-4 py-2">Freelancer</th>
+            <th class="px-4 py-2">Employer</th>
+            <th class="px-4 py-2">Start Date</th>
+            <th class="px-4 py-2">End Date</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamic contract rows will be inserted here -->
+        </tbody>
+      </table>
+    </main>
+
+    <!-- Action Modal -->
+    <div id="actionModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Choose an Action</h2>
+        <div id="action-buttons"></div>
+      </div>
+    </div>
+
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Rate the User</h2>
+        <label for="rating">Rating (1-5):</label>
+        <input type="number" id="rating" name="rating" min="1" max="5" />
+        <button onclick="submitRating()">Submit Rating</button>
+      </div>
+    </div>
+
+    <style>
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: none;
+      }
+
+      button:hover {
+        background-color: #0056b3; /* Darker blue on hover */
+      }
+      .modal {
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+      }
+      .modal-content {
+        background-color: #333;
+        margin: 15% auto;
+        color: #fff; /* White text */
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+  </body>
+</html>

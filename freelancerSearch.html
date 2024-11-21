@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Find Freelancers</title>
+
+    <!-- Firebase Configuration -->
+    <script type="module">
+      // Firebase Configuration
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+      } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js";
+      import { getAuth } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1B7rktZT_Msjj2n3z1pdFPEPKCDROIT4",
+        authDomain: "freelancer-fa103.firebaseapp.com",
+        databaseURL: "https://freelancer-fa103-default-rtdb.firebaseio.com",
+        projectId: "freelancer-fa103",
+        storageBucket: "freelancer-fa103.firebasestorage.app",
+        messagingSenderId: "594838296454",
+        appId: "1:594838296454:web:4900cc9a1a862d0a863e07",
+        measurementId: "G-N5E8FGBXDN",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      const auth = getAuth(app);
+
+      window.onload = async () => {
+        // Load the navigation bar
+        fetch("nav.html")
+          .then((response) => response.text())
+          .then((navHtml) => {
+            document.getElementById("nav-container").innerHTML = navHtml;
+
+            // After nav is loaded, initialize the toggleMenu function
+            const toggleBtn = document.getElementById("hamburgerDropdown");
+            if (toggleBtn) {
+              toggleBtn.style.display = "none"; // Initially hide the menu if needed
+            }
+
+            // Now load the navbar.js script
+            const script = document.createElement("script");
+            script.src = "navbar.js"; // Path to navbar.js
+            document.body.appendChild(script);
+          })
+          .catch((error) => console.error("Error loading nav.html:", error));
+
+        // Get current user ID from localStorage
+        const userId = localStorage.getItem("userUid");
+        if (!userId) {
+          console.error("User not logged in or user ID not found.");
+          return;
+        }
+
+        // Fetch freelancers based on search criteria
+        const searchForm = document.querySelector("form");
+        searchForm.addEventListener("submit", async (event) => {
+          event.preventDefault(); // Prevent the default form submission
+
+          const searchQuery = document.querySelector(
+            "input[name='search']"
+          ).value;
+          const skill = document.querySelector("select[name='skill']").value;
+          const minRating = document.querySelector(
+            "select[name='min-rating']"
+          ).value;
+          const maxRate = document.querySelector("#max-rate").value;
+
+          const freelancers = await fetchFreelancers(
+            searchQuery,
+            skill,
+            minRating,
+            maxRate
+          );
+
+          // Update the UI with the freelancers
+          const resultsContainer =
+            document.getElementById("freelancer-results");
+          resultsContainer.innerHTML = ""; // Clear existing results
+
+          if (freelancers.length > 0) {
+            freelancers.forEach((freelancer) => {
+              const freelancerCard = document.createElement("div");
+              freelancerCard.classList.add(
+                "bg-gray-800",
+                "p-4",
+                "rounded-md",
+                "shadow-md",
+                "mb-4"
+              );
+              freelancerCard.innerHTML = `
+                  <div class="card-body">
+                    <h5 class="card-title text-xl font-semibold text-white">${
+                      freelancer.name
+                    }</h5>
+                    <p class="text-gray-300">${freelancer.email}</p>
+                    <p class="text-gray-400">Skills: ${freelancer.skills}</p>
+                    <p class="text-gray-300">Rate: $${
+                      freelancer.minimum_rate
+                    }/hr</p>
+                    <p class="text-gray-300">Rating: ${
+                      freelancer.rating || "Not rated"
+                    }</p>
+                    <a href="/messaging?recipient_id=${
+                      freelancer.id
+                    }" class="inline-block bg-blue-600 text-white py-2 px-4 rounded-md mt-2 hover:bg-blue-700">Message</a>
+                  </div>
+                `;
+              resultsContainer.appendChild(freelancerCard); // Append the card to results container
+            });
+          } else {
+            resultsContainer.innerHTML =
+              "<p class='text-white'>No freelancers found.</p>";
+          }
+        });
+      };
+
+      // Fetch freelancers from Firebase
+      const fetchFreelancers = async (
+        searchQuery,
+        skill,
+        minRating,
+        maxRate
+      ) => {
+        const usersRef = ref(database, "users"); // Fetch users data
+        const snapshot = await get(usersRef); // Get data from Firebase
+        const freelancers = snapshot.val() || {}; // Handle empty data
+
+        // Filter freelancers based on the search criteria
+        const filteredFreelancers = Object.values(freelancers).filter(
+          (freelancer) => {
+            const matchesSearch =
+              !searchQuery ||
+              freelancer.name
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+              freelancer.email
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase());
+
+            const matchesSkill =
+              !skill ||
+              freelancer.skills.toLowerCase().includes(skill.toLowerCase());
+            const matchesRating = !minRating || freelancer.rating >= minRating;
+            const matchesRate = freelancer.minimum_rate <= maxRate;
+
+            return (
+              matchesSearch && matchesSkill && matchesRating && matchesRate
+            );
+          }
+        );
+
+        return filteredFreelancers; // Return filtered freelancers
+      };
+    </script>
+
+    <!-- TailwindCSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-gray-900 text-white">
+    <div id="nav-container"></div>
+
+    <!-- Main content container -->
+    <div class="container mx-auto p-6 w-3/5">
+      <section id="freelancer-search">
+        <h1 class="mb-4 text-center text-3xl font-bold">Find Freelancers</h1>
+        <p class="text-center mb-4 text-lg">
+          Search for skilled freelancers based on their expertise, ratings, and
+          availability.
+        </p>
+
+        <!-- Search Form -->
+        <form method="GET" class="space-y-4">
+          <!-- Search Input -->
+          <div class="mb-4">
+            <label for="search" class="block text-sm font-medium text-gray-300">
+              Search freelancers by name or email
+            </label>
+            <input
+              type="search"
+              name="search"
+              id="search"
+              class="form-control w-full px-4 py-2 rounded-md text-gray-700"
+              placeholder="Search freelancers"
+              aria-label="Search freelancers"
+            />
+          </div>
+
+          <!-- Skill and Rating Filters -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Skill Select -->
+            <div class="mb-4">
+              <label
+                for="skill"
+                class="block text-sm font-medium text-gray-300"
+              >
+                Select skills
+              </label>
+              <select
+                name="skill"
+                id="skill"
+                class="form-select w-full px-4 py-2 rounded-md"
+              >
+                <option value="">Select skills</option>
+                <option value="JavaScript">JavaScript</option>
+                <option value="Python">Python</option>
+                <option value="React">React</option>
+              </select>
+            </div>
+
+            <!-- Minimum Rating Select -->
+            <div class="mb-4">
+              <label
+                for="min-rating"
+                class="block text-sm font-medium text-gray-300"
+              >
+                Minimum rating
+              </label>
+              <select
+                name="min-rating"
+                id="min-rating"
+                class="form-select w-full px-4 py-2 rounded-md"
+              >
+                <option value="">Select option</option>
+                <option value="1">★☆☆☆☆</option>
+                <option value="2">★★☆☆☆</option>
+                <option value="3">★★★☆☆</option>
+                <option value="4">★★★★☆</option>
+                <option value="5">★★★★★</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Maximum Rate Slider -->
+          <div class="mb-4">
+            <label
+              for="max-rate"
+              class="block text-sm font-medium text-gray-300"
+            >
+              Maximum Hourly Rate: <span id="max-rate-value">100</span>
+            </label>
+            <input
+              type="range"
+              id="max-rate"
+              name="max-rate"
+              class="form-range w-full"
+              min="0"
+              max="100"
+              value="100"
+              oninput="document.getElementById('max-rate-value').textContent = this.value"
+            />
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none"
+          >
+            Search
+          </button>
+        </form>
+
+        <!-- Freelancer results will be displayed here -->
+        <div id="freelancer-results" class="mt-6">
+          <!-- Results will be populated dynamically here -->
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
