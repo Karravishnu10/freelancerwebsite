@@ -36,31 +36,23 @@
         try {
           // Fetch Active Freelancers Count
           const freelancersSnapshot = await get(ref(database, "users"));
-          const activeFreelancers = freelancersSnapshot.exists()
-            ? freelancersSnapshot.numChildren()
-            : 0;
+          const freelancers = freelancersSnapshot.exists()
+            ? Object.values(freelancersSnapshot.val())
+            : [];
+          const activeFreelancers = freelancers.length;
 
           // Fetch Available Jobs Count
           const jobsSnapshot = await get(ref(database, "jobs"));
-          const availableJobs = jobsSnapshot.exists()
-            ? jobsSnapshot.numChildren()
-            : 0;
+          const jobs = jobsSnapshot.exists()
+            ? Object.values(jobsSnapshot.val())
+            : [];
+          const availableJobs = jobs.length;
 
           // Fetch First Job
-          const firstJobSnapshot = await get(ref(database, "jobs"))
-            .orderByKey()
-            .limitToFirst(1);
-          const firstJob = firstJobSnapshot.exists()
-            ? Object.values(firstJobSnapshot.val())[0]
-            : null;
+          const firstJob = jobs.length > 0 ? jobs[0] : null;
 
-          // Fetch Top Rated Freelancer
-          const topRatedFreelancerSnapshot = await get(ref(database, "users"))
-            .orderByChild("rating")
-            .limitToLast(1);
-          const topRatedUser = topRatedFreelancerSnapshot.exists()
-            ? Object.values(topRatedFreelancerSnapshot.val())[0]
-            : null;
+          // Fetch First User
+          const firstUser = freelancers.length > 0 ? freelancers[0] : null;
 
           // Update the UI with the fetched data
           document.getElementById("active-freelancers").innerText =
@@ -69,21 +61,17 @@
 
           if (firstJob) {
             document.getElementById("first-job-title").innerText =
-              firstJob.title;
-            document.getElementById("first-job-budget").innerText =
-              firstJob.budget;
+              firstJob.title || "No Title";
+            document.getElementById("first-job-budget").innerText = `${
+              firstJob.budget || 0
+            }`;
           }
 
-          if (topRatedUser) {
-            document.getElementById("top-rated-name").innerText =
-              topRatedUser.name;
-            document.getElementById("top-rated-email").innerText =
-              topRatedUser.email;
-            document.getElementById("top-rated-rating").innerText =
-              topRatedUser.rating.toFixed(2);
-          } else {
-            document.getElementById("top-rated-user").innerText =
-              "No top-rated freelancer available yet.";
+          if (firstUser) {
+            document.getElementById("first-user-name").innerText =
+              firstUser.name || "No Name";
+            document.getElementById("first-user-email").innerText =
+              firstUser.email || "No Email";
           }
         } catch (error) {
           console.error("Error fetching data:", error);
@@ -129,7 +117,7 @@
       <p class="mt-2 text-xl">
         Find top talent and exciting job opportunities all in one place.
       </p>
-      <form action="/find-freelancers" method="GET" class="mt-6">
+      <form action="freelancersearch.html" method="GET" class="mt-6">
         <input
           type="search"
           name="search"
@@ -144,7 +132,7 @@
           Search
         </button>
         <button
-          onclick="window.location.href='/freelancerSearch.html'"
+          onclick="window.location.href='freelancerSearch.html'"
           class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none"
         >
           Find Freelancers
@@ -154,39 +142,45 @@
 
     <section
       id="stats"
-      class="flex justify-between px-8 py-6 bg-gray-800 text-lg"
+      class="flex justify-between items-center max-w-4xl mx-auto px-8 py-6 bg-gray-800 text-lg rounded-lg"
     >
-      <div>
-        <strong class="mr-2">Active Freelancers:</strong
-        ><span id="active-freelancers">0</span>
+      <div class="flex-1 text-center">
+        <strong class="mr-2">Active Freelancers:</strong>
+        <span id="active-freelancers">0</span>
       </div>
-      <div>
-        <strong class="mr-2">Available Jobs:</strong
-        ><span id="available-jobs">0</span>
-      </div>
-    </section>
-
-    <section id="featured-jobs" class="py-8 px-8 bg-gray-800">
-      <h2 class="text-2xl font-semibold text-center">Featured Job Listings</h2>
-      <div class="card mt-6 bg-gray-700 text-white p-6 rounded-md">
-        <h5 class="text-xl font-medium" id="first-job-title">Job Title</h5>
-        <h6 class="text-md text-gray-400 mt-2">
-          Budget: $<span id="first-job-budget">0</span>
-        </h6>
+      <div class="flex-1 text-center">
+        <strong class="mr-2">Available Jobs:</strong>
+        <span id="available-jobs">0</span>
       </div>
     </section>
 
-    <section id="top-rated-freelancers" class="py-8 px-8 bg-gray-800">
-      <h2 class="text-2xl font-semibold text-center">Top-Rated Freelancer</h2>
-      <div id="top-rated-user" class="mt-6 text-center">
-        <div class="card bg-gray-700 text-white p-6 rounded-md mx-auto w-1/3">
-          <h5 class="text-xl font-medium" id="top-rated-name">
-            Freelancer Name
-          </h5>
-          <h6 class="text-md text-gray-400 mt-2" id="top-rated-email">
-            email@example.com
+    <section
+      class="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 px-8 bg-gray-800 mt-6"
+    >
+      <div id="featured-jobs">
+        <h2 class="text-2xl font-semibold text-center">
+          Featured Job Listings
+        </h2>
+        <div class="card mt-6 bg-gray-700 text-white p-6 rounded-md">
+          <h5 class="text-xl font-medium" id="first-job-title">Job Title</h5>
+          <h6 class="text-md text-gray-400 mt-2">
+            Budget: $<span id="first-job-budget">0</span>
           </h6>
-          <p class="mt-2 text-lg" id="top-rated-rating">Rating: 0</p>
+        </div>
+      </div>
+
+      <div id="top-rated-freelancers">
+        <h2 class="text-2xl font-semibold text-center">Top-Rated Freelancer</h2>
+        <div id="top-rated-user" class="mt-6 text-center">
+          <div class="card bg-gray-700 text-white p-6 rounded-md mx-auto">
+            <h5 class="text-xl font-medium" id="first-user-name">
+              Freelancer Name
+            </h5>
+            <h6 class="text-md text-gray-400 mt-2" id="first-user-email">
+              email@example.com
+            </h6>
+            <p class="mt-2 text-lg" id="top-rated-rating">Rating: 0</p>
+          </div>
         </div>
       </div>
     </section>
